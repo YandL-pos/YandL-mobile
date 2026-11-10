@@ -1,9 +1,14 @@
-export const WEB_APP_URL = 'https://commercial.autoshopmm.com';
+// Override per build with EXPO_PUBLIC_WEB_APP_URL (e.g. the local Vite dev server while developing).
+export const WEB_APP_URL = (
+  process.env.EXPO_PUBLIC_WEB_APP_URL ||
+  'https://yandl-frontend.pages.dev'
+).replace(/\/+$/, '');
 
 // Override per build with EXPO_PUBLIC_API_BASE_URL (e.g. a local backend while developing).
+// TODO: replace the fallback with the YandL production backend URL.
 export const API_BASE_URL = (
   process.env.EXPO_PUBLIC_API_BASE_URL ||
-  'https://commercial-backend-production.up.railway.app/api/v1'
+  // 'https://commercial-backend-production.up.railway.app/api/v1'
 ).replace(/\/+$/, '');
 
 export const API_TIMEOUT_MS = 20000;

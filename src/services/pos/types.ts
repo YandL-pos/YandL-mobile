@@ -1,4 +1,4 @@
-// Shapes returned by the commercial backend (/api/v1), mirrored from Autoshop-Frontend services
+// Shapes returned by the YandL backend (/api/v1), mirrored from yandl-frontend services
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -33,11 +33,37 @@ export interface PosProduct {
 }
 
 export interface FetchProductsParams {
+  // Stock is read from this storefront, as on the web POS
+  storefrontId: string;
   page?: number;
   limit?: number;
   category?: string;
-  status?: 'active' | 'inactive';
   search?: string;
+}
+
+// GET /storefront-profile
+export interface StorefrontProfile {
+  _id: string;
+  locationCode: string;
+  locationName: string;
+  status: 'active' | 'inactive';
+}
+
+// One row of GET /storefront-inventory: a product's stock in one storefront
+export interface StorefrontStockItem {
+  _id: string;
+  inventoryId: {
+    _id: string;
+    productName: string;
+    productCode?: string;
+    SKU?: string;
+    category?: string;
+    sellingPrice?: number;
+    wholesalePrices?: WholesalePrice[];
+  } | null;
+  // Stock left to sell; the backend may only send quantity, so read it as availableQuantity ?? quantity
+  availableQuantity?: number | null;
+  quantity?: number | null;
 }
 
 export interface FetchProductsResponse extends ApiResponse<PosProduct[]> {

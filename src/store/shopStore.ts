@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 import { fetchShopSettings } from '../services/pos/posApi';
-import type { ShopSettings } from '../services/pos/types';
+import type { ShopSettings, StorefrontProfile } from '../services/pos/types';
 
 export interface ShopProfile {
   name: string;
@@ -21,11 +21,18 @@ interface ShopState {
   receiptSlot: number;
   setReceiptSlot: (slot: number) => void;
   loadSettings: () => Promise<void>;
+
+  // Storefront last picked on the web POS (its pos_selected_storefront_id), synced from the WebView
+  preferredStorefrontId: string | null;
+  setPreferredStorefrontId: (id: string | null) => void;
+  // Storefront the native POS sells from: the preferred one, or the first active one
+  posStorefront: StorefrontProfile | null;
+  setPosStorefront: (storefront: StorefrontProfile | null) => void;
 }
 
 export const useShopStore = create<ShopState>((set) => ({
   shop: {
-    name: 'AutoShop Commercial',
+    name: 'YandN',
     address: 'Yangon, Myanmar',
     phone: '',
     footerMessage: 'ဝယ်ယူအားပေးမှုအတွက် ကျေးဇူးတင်ပါသည်။',
@@ -42,4 +49,9 @@ export const useShopStore = create<ShopState>((set) => ({
     const res = await fetchShopSettings();
     if (res.success && res.data) set({ settings: res.data });
   },
+
+  preferredStorefrontId: null,
+  setPreferredStorefrontId: (preferredStorefrontId) => set({ preferredStorefrontId }),
+  posStorefront: null,
+  setPosStorefront: (posStorefront) => set({ posStorefront }),
 }));

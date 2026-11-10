@@ -37,6 +37,7 @@ import { colors, formatMMK, TABLET_MIN_WIDTH } from '../../features/pos/theme';
 import { createOrder } from '../../services/pos/posApi';
 import type { CreditPersona } from '../../services/pos/types';
 import { PaymentOption, useCartStore, useCartTotals } from '../../store/cartStore';
+import { useShopStore } from '../../store/shopStore';
 import { toast } from '../../store/toastStore';
 
 const PAYMENT_OPTIONS: { id: PaymentOption; label: string }[] = [
@@ -62,6 +63,7 @@ const close = () => {
 export default function CheckoutScreen() {
   const cart = useCartStore();
   const totals = useCartTotals();
+  const storefrontId = useShopStore((state) => state.posStorefront?._id);
   const { personas, isLoading: personasLoading, addPersona } = useCreditPersonas();
 
   const [isPickerOpen, setIsPickerOpen] = useState(false);
@@ -98,6 +100,7 @@ export default function CheckoutScreen() {
     creditPersonId: cart.creditPersonId,
     note: cart.note,
     orderDate: cart.orderDate,
+    storefrontId,
   };
   const validationError = validateCheckout(input);
 

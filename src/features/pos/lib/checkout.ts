@@ -20,6 +20,8 @@ export interface CheckoutInput {
   note: string;
   // YYYY-MM-DD, as picked on the checkout screen
   orderDate: string;
+  // Storefront the stock is sold from
+  storefrontId?: string;
 }
 
 export const isFoc = (paymentMethod: PaymentMethod) => paymentMethod === PAYMENT_METHODS.FOC;
@@ -69,8 +71,10 @@ export const validateCheckout = ({
 };
 
 export const buildCreateOrderPayload = (input: CheckoutInput): CreateOrderRequest => {
-  const { items, totals, paymentType, paymentMethod, paidAmount, creditPersonId, note, orderDate } = input;
+  const { items, totals, paymentType, paymentMethod, paidAmount, creditPersonId, note, orderDate, storefrontId } =
+    input;
   return {
+    ...(storefrontId ? { storefrontId } : {}),
     ordersProducts: items.map((item) => ({
       inventoryId: item.product._id,
       quantity: item.qty,

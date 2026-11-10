@@ -98,6 +98,11 @@ describe('buildCreateOrderPayload', () => {
     ).toMatchObject({ paymentType: 'credit', creditPersonId: 'cp1', paidAmount: 0 });
   });
 
+  it('sends the storefront the stock is sold from', () => {
+    expect(buildCreateOrderPayload(input())).not.toHaveProperty('storefrontId');
+    expect(buildCreateOrderPayload(input({ storefrontId: 'sf1' }))).toMatchObject({ storefrontId: 'sf1' });
+  });
+
   it('sends discounts as an amount', () => {
     const discounted = computeTotals({ items, priceMode: 'discount', discountPercent: 10, markupAmount: 0 });
     expect(buildCreateOrderPayload(input({ totals: discounted, paidAmount: 2700 }))).toMatchObject({

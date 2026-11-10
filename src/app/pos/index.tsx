@@ -19,7 +19,12 @@ import PosFilters, { ALL_CATEGORIES } from '../../features/pos/components/PosFil
 import PosNavbar from '../../features/pos/components/PosNavbar';
 import ProductCard from '../../features/pos/components/ProductCard';
 import WholesaleSheet from '../../features/pos/components/WholesaleSheet';
-import { useCategories, useDebouncedValue, useProducts } from '../../features/pos/hooks/usePosData';
+import {
+  useCategories,
+  useDebouncedValue,
+  useProducts,
+  useStorefront,
+} from '../../features/pos/hooks/usePosData';
 import { CART_ERROR_MESSAGES, CartError, filterProducts, StockFilter } from '../../features/pos/lib';
 import { colors, TABLET_MIN_WIDTH, toBurmeseNumber } from '../../features/pos/theme';
 import type { PosProduct } from '../../services/pos/types';
@@ -114,7 +119,9 @@ function PosCatalog() {
 
   const debouncedSearch = useDebouncedValue(search.trim());
   const categories = useCategories();
+  const { storefront, error: storefrontError } = useStorefront();
   const { products, totalItems, error, isLoading, isRefreshing, isLoadingMore, loadMore } = useProducts({
+    storefrontId: storefront?._id,
     search: debouncedSearch,
     category,
     // Reload after a sale too, so stock levels are current
@@ -173,7 +180,7 @@ function PosCatalog() {
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <PosNavbar
         title="အရောင်း ဘောင်ချာထုတ်မယ်"
-        subtitle="Checkout (POS)"
+        subtitle={storefront ? `Checkout (POS) · ${storefront.locationName}` : 'Checkout (POS)'}
         onBack={leavePos}
         onPrinter={() => router.push('/printer')}
         printerConnected={!!connectedPrinter}
@@ -186,7 +193,7 @@ function PosCatalog() {
           <FlatList
             // numColumns can't change on a mounted FlatList
             key={`pos-grid-${columns}`}
-            data={isLoading ? [] : visibleProducts}
+            data={isLoading || storefrontError ? [] : visibleProducts}
             keyExtractor={(product) => product._id}
             numColumns={columns}
             // FlatList rejects a column wrapper style on single-column lists
@@ -208,7 +215,9 @@ function PosCatalog() {
             onEndReachedThreshold={0.6}
             refreshControl={<RefreshControl refreshing={false} onRefresh={refresh} colors={[colors.primary]} />}
             ListEmptyComponent={
-              isLoading ? (
+              storefrontError ? (
+                <Text style={styles.empty}>{storefrontError}</Text>
+              ) : isLoading ? (
                 <ActivityIndicator style={styles.loading} size="large" color={colors.primary} />
               ) : (
                 <Text style={styles.empty}>{error || 'ပစ္စည်း မရှိသေးပါ'}</Text>

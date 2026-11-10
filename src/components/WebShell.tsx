@@ -37,7 +37,8 @@ const INJECTED_JAVASCRIPT = `
       } catch (e) {}
     }
 
-    // Cashier name and receipt branding slot, for receipts printed by the native POS
+    // Cashier name and receipt branding slot, for receipts printed by the native POS,
+    // and the storefront picked on the web POS, which the native POS sells from too
     function syncWebPrefs() {
       try {
         if (!window.ReactNativeWebView) return;
@@ -46,7 +47,8 @@ const INJECTED_JAVASCRIPT = `
         window.ReactNativeWebView.postMessage(JSON.stringify({
           type: 'WEB_PREFS_SYNC',
           cashierName: admin.name || admin.username || null,
-          receiptSlot: isNaN(slot) ? 1 : slot
+          receiptSlot: isNaN(slot) ? 1 : slot,
+          storefrontId: localStorage.getItem('pos_selected_storefront_id') || null
         }));
       } catch (e) {}
     }
@@ -62,7 +64,7 @@ const INJECTED_JAVASCRIPT = `
       if (k === 'authToken') {
         syncAuthToken();
       }
-      if (k === 'adminData' || k === 'voucherReceiptLogoSlot') {
+      if (k === 'adminData' || k === 'voucherReceiptLogoSlot' || k === 'pos_selected_storefront_id') {
         syncWebPrefs();
       }
     };
@@ -264,6 +266,9 @@ export default function WebShell() {
           if (typeof message.receiptSlot === 'number') {
             useShopStore.getState().setReceiptSlot(message.receiptSlot);
           }
+          useShopStore
+            .getState()
+            .setPreferredStorefrontId(typeof message.storefrontId === 'string' ? message.storefrontId : null);
           break;
         }
 
