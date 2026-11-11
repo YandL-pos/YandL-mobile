@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import AppDialog from '../components/AppDialog';
 import GlobalReceiptCapturer from '../components/GlobalReceiptCapturer';
 import Toast from '../components/Toast';
 import { APP_FONTS } from '../fonts';
@@ -38,6 +39,7 @@ export default function RootLayout() {
         />
       </Stack>
       <Toast />
+      <AppDialog />
 
       {/* Draws receipts off screen for image-mode printing, from any screen */}
       <GlobalReceiptCapturer />

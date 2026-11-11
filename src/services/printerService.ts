@@ -79,7 +79,8 @@ export const printerService = {
     return Platform.OS === 'android' && !!NativeModules.BluetoothManager && !!NativeModules.BluetoothEscposPrinter;
   },
 
-  // Bluetooth permissions are required; location is asked for too because discovery needs it
+  // Android 12+ asks only for Bluetooth (scanning is declared neverForLocation in the manifest);
+  // older versions need location to discover printers
   async requestBluetoothPermissions(): Promise<boolean> {
     if (Platform.OS !== 'android') return true;
 
@@ -91,8 +92,6 @@ export const printerService = {
         const statuses = await PermissionsAndroid.requestMultiple([
           PERMISSIONS.BLUETOOTH_SCAN,
           PERMISSIONS.BLUETOOTH_CONNECT,
-          PERMISSIONS.ACCESS_FINE_LOCATION,
-          PERMISSIONS.ACCESS_COARSE_LOCATION,
         ]);
         return (
           statuses[PERMISSIONS.BLUETOOTH_SCAN] === RESULTS.GRANTED &&
@@ -320,60 +319,69 @@ export const printerService = {
   async printTextReceipt(receipt: ReceiptData, width: 58 | 80): Promise<void> {
     const is80mm = width === 80;
     const separator = `${'-'.repeat(is80mm ? 46 : 32)}\n`;
-    const columns = is80mm ? [22, 6, 8, 10] : [14, 4, 6, 8];
+    // Item / Price / Qty / Total, in the web voucher's order
+    const columns = is80mm ? [22, 8, 6, 10] : [14, 6, 4, 8];
     const totals = is80mm ? [34, 12] : [20, 12];
     const shop = useShopStore.getState().shop;
-    const money = (value?: number) => `${Number(value || 0).toLocaleString('en-US')} MMK`;
+    const amount = (value?: number) => Number(value || 0).toLocaleString('en-US');
     const line = (text: string) => BluetoothEscposPrinter.printText(`${text}\n`, {});
     const totalRow = (label: string, value: string) =>
       BluetoothEscposPrinter.printColumn(totals, [ALIGN.LEFT, ALIGN.RIGHT], [label, value], {});
 
+    // Same sections as the picture receipt (ReceiptPrintTemplate), in English
     await BluetoothEscposPrinter.printerInit();
     await BluetoothEscposPrinter.printerAlign(ALIGN.CENTER);
     await line(receipt.shopName || shop.name);
-    const phone = receipt.shopPhone || shop.phone;
-    if (phone) await line(`Ph: ${phone}`);
     const address = receipt.shopAddress || shop.address;
     if (address) await line(address);
+    const phone = receipt.shopPhone || shop.phone;
+    if (phone) await line(`Tel: ${phone}`);
 
     await BluetoothEscposPrinter.printerAlign(ALIGN.LEFT);
     await line(separator.trimEnd());
-    await line(`Invoice : ${receipt.invoiceNo}`);
-    await line(`Date    : ${receipt.date}`);
     if (receipt.customerName) await line(`Customer: ${receipt.customerName}`);
-    if (receipt.paymentType) await line(`Payment : ${receipt.paymentType}`);
-    if (receipt.cashierName) await line(`Cashier : ${receipt.cashierName}`);
-    await line(separator.trimEnd());
+    if (receipt.customerPhone) await line(`Phone: ${receipt.customerPhone}`);
+    if (receipt.customerAddress) await line(`Address: ${receipt.customerAddress}`);
 
-    const aligns = [ALIGN.LEFT, ALIGN.CENTER, ALIGN.RIGHT, ALIGN.RIGHT];
-    await BluetoothEscposPrinter.printColumn(columns, aligns, ['Item', 'Qty', 'Price', 'Total'], {});
-    await line(separator.trimEnd());
+    const aligns = [ALIGN.LEFT, ALIGN.RIGHT, ALIGN.CENTER, ALIGN.RIGHT];
+    await BluetoothEscposPrinter.printColumn(columns, aligns, ['Item', 'Price', 'Qty', 'Total'], {});
     for (const item of receipt.items) {
       await BluetoothEscposPrinter.printColumn(
         columns,
         aligns,
-        [
-          item.name || '',
-          String(item.quantity || 0),
-          Number(item.price || 0).toLocaleString('en-US'),
-          Number(item.subTotal || 0).toLocaleString('en-US'),
-        ],
+        [item.name || '', amount(item.price), String(item.quantity || 0), amount(item.subTotal)],
         {},
       );
+      if (item.code) await line(`  ${item.code}`);
     }
     await line(separator.trimEnd());
 
-    await totalRow('Subtotal:', money(receipt.subtotal));
-    if (receipt.discount) await totalRow('Discount:', `-${money(receipt.discount)}`);
-    if (receipt.markup) await totalRow('Mark Up:', `+${money(receipt.markup)}`);
-    await totalRow('Net Total:', money(receipt.netTotal));
-    if (receipt.paidAmount !== undefined) await totalRow('Paid:', money(receipt.paidAmount));
-    if (receipt.changeAmount) await totalRow('Change:', money(receipt.changeAmount));
-    if (receipt.dueAmount) await totalRow('Due:', money(receipt.dueAmount));
-
+    await totalRow('Gross:', amount(receipt.subtotal));
+    if (receipt.discount) {
+      const percent = receipt.discountPercent ? ` (${Number(receipt.discountPercent.toFixed(2))}%)` : '';
+      await totalRow(`Discount${percent}:`, `-${amount(receipt.discount)}`);
+    }
+    if (receipt.markup) await totalRow('Mark Up:', `+${amount(receipt.markup)}`);
+    if (receipt.serviceCharge) await totalRow('Service charge:', amount(receipt.serviceCharge));
+    if (receipt.tax) await totalRow('Tax:', amount(receipt.tax));
     await line(separator.trimEnd());
+    await totalRow('TOTAL:', amount(receipt.netTotal));
+    await line(separator.trimEnd());
+
+    if (receipt.paymentType) await totalRow('Payment:', receipt.paymentType);
+    if (receipt.paidAmount !== undefined) await totalRow('Paid:', amount(receipt.paidAmount));
+    if (receipt.changeAmount) await totalRow('Change:', amount(receipt.changeAmount));
+    if (receipt.dueAmount) await totalRow('Balance due:', amount(receipt.dueAmount));
+    await line(separator.trimEnd());
+
+    if (receipt.note) await line(`Note: ${receipt.note}`);
+    await totalRow('Receipt:', receipt.invoiceNo);
+    await totalRow(receipt.date, 'Thank you!');
+    await line('='.repeat(is80mm ? 46 : 32));
+
     await BluetoothEscposPrinter.printerAlign(ALIGN.CENTER);
-    await line('Thank you! Please come again.');
+    if (receipt.sequenceNumber != null) await line(`#${String(receipt.sequenceNumber).padStart(4, '0')}`);
+    if (receipt.cashierName) await line(`Printed by: ${receipt.cashierName}`);
     await BluetoothEscposPrinter.printAndFeed(150);
     try {
       // ESC/POS cut (GS V 66 0); printers without a cutter ignore it

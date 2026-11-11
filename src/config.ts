@@ -8,7 +8,7 @@ export const WEB_APP_URL = (
 // TODO: replace the fallback with the YandL production backend URL.
 export const API_BASE_URL = (
   process.env.EXPO_PUBLIC_API_BASE_URL ||
-  // 'https://commercial-backend-production.up.railway.app/api/v1'
+  'https://yandl-backend-production.up.railway.app/api/v1/'
 ).replace(/\/+$/, '');
 
 export const API_TIMEOUT_MS = 20000;

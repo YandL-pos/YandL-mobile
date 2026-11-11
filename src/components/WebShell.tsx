@@ -8,7 +8,6 @@ import {
   BackHandler,
   Platform,
   Linking,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import WebView from 'react-native-webview';
@@ -20,6 +19,9 @@ import { webBridge } from '../services/webBridge';
 import { usePrinterStore } from '../store/printerStore';
 import { useAuthStore } from '../store/authStore';
 import { useShopStore } from '../store/shopStore';
+import { dialog } from '../store/dialogStore';
+import { toast } from '../store/toastStore';
+import { printWebVoucher } from '../features/pos/printWebVoucher';
 import { NATIVE_POS_ENABLED, WEB_APP_URL } from '../config';
 
 const INJECTED_JAVASCRIPT = `
@@ -125,6 +127,8 @@ const INJECTED_JAVASCRIPT = `
 export default function WebShell() {
   const webViewRef = useRef<any>(null);
   const isFocusedRef = useRef(false);
+  // One web voucher print at a time, so a double tap doesn't print twice
+  const printingVoucherRef = useRef(false);
   const [canGoBack, setCanGoBack] = useState(false);
   const [hasError, setHasError] = useState(false);
 
@@ -207,7 +211,7 @@ export default function WebShell() {
               })
             );
           } catch (printErr: any) {
-            Alert.alert(
+            dialog.alert(
               'ပုံနှိပ်၍ မရပါ (Print Error)',
               printErr?.message || 'ပရင်တာချိတ်ဆက်မှုကို စစ်ဆေးပါ။'
             );
@@ -219,6 +223,35 @@ export default function WebShell() {
                 invoiceNo: receiptData?.invoiceNo,
               })
             );
+          }
+          break;
+        }
+
+        // Order details' Print button: the web page can't print inside the WebView, so the app prints
+        // the voucher on its Bluetooth printer, laid out like a native POS receipt
+        case 'PRINT_VOUCHER': {
+          if (!message.voucher || printingVoucherRef.current) break;
+          printingVoucherRef.current = true;
+          toast.info('ဘောင်ချာ ပုံနှိပ်နေပါသည်...');
+          try {
+            await printWebVoucher(message.voucher, {
+              paymentType: message.paymentType,
+              paymentMethod: message.paymentMethod,
+            });
+            toast.success('ပုံနှိပ်ပြီးပါပြီ');
+          } catch (printErr: any) {
+            if (!usePrinterStore.getState().connectedPrinter) {
+              dialog.confirm({
+                title: 'ပရင်တာ မချိတ်ရသေးပါ',
+                message: 'ဘောင်ချာ ထုတ်ရန် Bluetooth ပရင်တာကို အရင်ချိတ်ပါ။',
+                confirmText: 'ပရင်တာ ချိတ်မယ်',
+                onConfirm: () => router.push('/printer'),
+              });
+            } else {
+              dialog.alert('ပုံနှိပ်၍ မရပါ (Print Error)', printErr?.message || 'ပရင်တာချိတ်ဆက်မှုကို စစ်ဆေးပါ။');
+            }
+          } finally {
+            printingVoucherRef.current = false;
           }
           break;
         }

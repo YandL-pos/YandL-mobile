@@ -70,7 +70,7 @@ index d86e4f5..f5e7c50 100644
  }
 \ No newline at end of file
 diff --git a/node_modules/react-native-bluetooth-escpos-printer/android/src/main/java/cn/jystudio/bluetooth/RNBluetoothManagerModule.java b/node_modules/react-native-bluetooth-escpos-printer/android/src/main/java/cn/jystudio/bluetooth/RNBluetoothManagerModule.java
-index dd5d33e..bcdf209 100644
+index dd5d33e..ddc93f2 100644
 --- a/node_modules/react-native-bluetooth-escpos-printer/android/src/main/java/cn/jystudio/bluetooth/RNBluetoothManagerModule.java
 +++ b/node_modules/react-native-bluetooth-escpos-printer/android/src/main/java/cn/jystudio/bluetooth/RNBluetoothManagerModule.java
 @@ -10,8 +10,8 @@ import android.content.Intent;
@@ -84,3 +84,14 @@ index dd5d33e..bcdf209 100644
  import android.util.Log;
  import android.widget.Toast;
  import com.facebook.react.bridge.*;
+@@ -263,7 +263,9 @@ public class RNBluetoothManagerModule extends ReactContextBaseJavaModule
+         switch (requestCode) {
+             case REQUEST_CONNECT_DEVICE: {
+                 // When DeviceListActivity returns with a device to connect
+-                if (resultCode == Activity.RESULT_OK) {
++                // Request code 1 is also the WebView file picker's (PICKER); its result has no device
++                // address extras, so anything without them isn't ours
++                if (resultCode == Activity.RESULT_OK && data != null && data.getExtras() != null) {
+                     // Get the device MAC address
+                     String address = data.getExtras().getString(
+                             EXTRA_DEVICE_ADDRESS);

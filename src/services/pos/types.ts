@@ -142,6 +142,11 @@ export interface BrandingProfile {
   address?: string;
 }
 
+export interface ShopLogo {
+  url: string;
+  slot: number;
+}
+
 export interface ShopSettings {
   _id: string;
   shopName: string;
@@ -150,6 +155,8 @@ export interface ShopSettings {
   formattedPhoneNumber?: string;
   logo?: string;
   brandingProfiles?: BrandingProfile[];
+  // Up to three logos, one per branding slot
+  logos?: ShopLogo[];
   currency?: string;
   taxRate?: number;
 }
