@@ -74,6 +74,11 @@ const showError = (error: CartError | undefined) => {
 export default function PosScreen() {
   const token = useAuthStore((state) => state.token);
   const isHydrated = useAuthStore((state) => state.isHydrated);
+  const role = useAuthStore((state) => state.role);
+  const permissions = useAuthStore((state) => state.permissions);
+  // Same rule as the web: owners hold every module; others need "sales". Not synced yet passes,
+  // and the backend still checks every request.
+  const canSell = !role || role === 'owner' || !permissions || permissions.includes('sales');
 
   if (!isHydrated) {
     return (
@@ -89,6 +94,17 @@ export default function PosScreen() {
         <Text style={styles.loginText}>Login မဝင်ရသေးပါ။ Web app မှာ login အရင်ဝင်ပါ။</Text>
         <TouchableOpacity onPress={goToWebLogin} style={styles.loginButton}>
           <Text style={styles.loginButtonText}>Login ဝင်မယ်</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
+  if (!canSell) {
+    return (
+      <SafeAreaView style={[styles.safeArea, styles.center]}>
+        <Text style={styles.loginText}>ဒီအကောင့်မှာ အရောင်း (Sales) လုပ်ပိုင်ခွင့် မရှိပါ။ Owner ကို ဆက်သွယ်ပါ။</Text>
+        <TouchableOpacity onPress={() => showWebPage('/')} style={styles.loginButton}>
+          <Text style={styles.loginButtonText}>ပင်မစာမျက်နှာ</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -119,7 +135,7 @@ function PosCatalog() {
 
   const debouncedSearch = useDebouncedValue(search.trim());
   const categories = useCategories();
-  const { storefront, error: storefrontError } = useStorefront();
+  const { storefront, isLocked, error: storefrontError } = useStorefront();
   const { products, totalItems, error, isLoading, isRefreshing, isLoadingMore, loadMore } = useProducts({
     storefrontId: storefront?._id,
     search: debouncedSearch,
@@ -180,7 +196,11 @@ function PosCatalog() {
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <PosNavbar
         title="အရောင်း ဘောင်ချာထုတ်မယ်"
-        subtitle={storefront ? `Checkout (POS) · ${storefront.locationName}` : 'Checkout (POS)'}
+        subtitle={
+          storefront
+            ? `Checkout (POS) · ${isLocked ? '🔒 ' : ''}${storefront.locationName}`
+            : 'Checkout (POS)'
+        }
         onBack={leavePos}
         onPrinter={() => router.push('/printer')}
         printerConnected={!!connectedPrinter}

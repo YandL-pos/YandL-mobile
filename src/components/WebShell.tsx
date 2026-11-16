@@ -21,6 +21,7 @@ import { usePrinterStore } from '../store/printerStore';
 import { useAuthStore } from '../store/authStore';
 import { useShopStore } from '../store/shopStore';
 import { NATIVE_POS_ENABLED, WEB_APP_URL } from '../config';
+import { toNativeReceiptData } from '../services/webVoucherPrint';
 
 const INJECTED_JAVASCRIPT = `
   window.isCommercialMobileApp = true;
@@ -44,11 +45,17 @@ const INJECTED_JAVASCRIPT = `
         if (!window.ReactNativeWebView) return;
         var admin = JSON.parse(localStorage.getItem('adminData') || '{}') || {};
         var slot = parseInt(localStorage.getItem('voucherReceiptLogoSlot') || '1', 10);
+        var role = typeof admin.role === 'string' ? admin.role.toLowerCase() : null;
+        var loc = admin.locationId && typeof admin.locationId === 'object' ? admin.locationId : null;
         window.ReactNativeWebView.postMessage(JSON.stringify({
           type: 'WEB_PREFS_SYNC',
           cashierName: admin.name || admin.username || null,
           receiptSlot: isNaN(slot) ? 1 : slot,
-          storefrontId: localStorage.getItem('pos_selected_storefront_id') || null
+          storefrontId: localStorage.getItem('pos_selected_storefront_id') || null,
+          role: role,
+          permissions: Array.isArray(admin.permissions) ? admin.permissions : null,
+          // A non-owner on a storefront location can only sell from that storefront
+          lockedStorefrontId: role !== 'owner' && loc && loc.type === 'storefront' && loc._id ? loc._id : null
         }));
       } catch (e) {}
     }
@@ -223,6 +230,37 @@ export default function WebShell() {
           break;
         }
 
+        case 'PRINT_VOUCHER': {
+          const receiptData = toNativeReceiptData(message.voucher || message.data || {}, {
+            paymentType: message.paymentType,
+            paymentMethod: message.paymentMethod,
+          });
+          try {
+            await printerService.printReceipt(receiptData);
+            webViewRef.current?.postMessage(
+              JSON.stringify({
+                type: 'PRINT_RESULT',
+                success: true,
+                invoiceNo: receiptData.invoiceNo,
+              }),
+            );
+          } catch (printErr: any) {
+            Alert.alert(
+              'ပုံနှိပ်၍ မရပါ (Print Error)',
+              printErr?.message || 'ပရင်တာချိတ်ဆက်မှုကို စစ်ဆေးပါ။',
+            );
+            webViewRef.current?.postMessage(
+              JSON.stringify({
+                type: 'PRINT_RESULT',
+                success: false,
+                error: printErr?.message || 'Print failed',
+                invoiceNo: receiptData.invoiceNo,
+              }),
+            );
+          }
+          break;
+        }
+
         case 'OPEN_NATIVE_POS': {
           // Ignore repeats while the native POS is already open
           if (isFocusedRef.current) {
@@ -269,6 +307,15 @@ export default function WebShell() {
           useShopStore
             .getState()
             .setPreferredStorefrontId(typeof message.storefrontId === 'string' ? message.storefrontId : null);
+          useShopStore
+            .getState()
+            .setLockedStorefrontId(typeof message.lockedStorefrontId === 'string' ? message.lockedStorefrontId : null);
+          useAuthStore
+            .getState()
+            .setAccess(
+              typeof message.role === 'string' ? message.role : null,
+              Array.isArray(message.permissions) ? message.permissions : null,
+            );
           break;
         }
 

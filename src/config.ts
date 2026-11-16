@@ -5,10 +5,11 @@ export const WEB_APP_URL = (
 ).replace(/\/+$/, '');
 
 // Override per build with EXPO_PUBLIC_API_BASE_URL (e.g. a local backend while developing).
-// TODO: replace the fallback with the YandL production backend URL.
+// TODO: put the YandL production backend URL here as the fallback. Until then a build without
+// EXPO_PUBLIC_API_BASE_URL has no backend (the old Autoshop one is left out on purpose).
 export const API_BASE_URL = (
   process.env.EXPO_PUBLIC_API_BASE_URL ||
-  // 'https://commercial-backend-production.up.railway.app/api/v1'
+  ''
 ).replace(/\/+$/, '');
 
 export const API_TIMEOUT_MS = 20000;

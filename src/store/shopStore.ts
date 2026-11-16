@@ -25,6 +25,9 @@ interface ShopState {
   // Storefront last picked on the web POS (its pos_selected_storefront_id), synced from the WebView
   preferredStorefrontId: string | null;
   setPreferredStorefrontId: (id: string | null) => void;
+  // Storefront the signed-in account is locked to (non-owner on a storefront location), from adminData
+  lockedStorefrontId: string | null;
+  setLockedStorefrontId: (id: string | null) => void;
   // Storefront the native POS sells from: the preferred one, or the first active one
   posStorefront: StorefrontProfile | null;
   setPosStorefront: (storefront: StorefrontProfile | null) => void;
@@ -52,6 +55,8 @@ export const useShopStore = create<ShopState>((set) => ({
 
   preferredStorefrontId: null,
   setPreferredStorefrontId: (preferredStorefrontId) => set({ preferredStorefrontId }),
+  lockedStorefrontId: null,
+  setLockedStorefrontId: (lockedStorefrontId) => set({ lockedStorefrontId }),
   posStorefront: null,
   setPosStorefront: (posStorefront) => set({ posStorefront }),
 }));

@@ -28,11 +28,13 @@ interface ProductPage {
 }
 
 /**
- * The storefront the POS sells from, like the web POS: the one last picked there, else the first
- * active one. Also kept in the shop store so checkout can send it with the order.
+ * The storefront the POS sells from, like the web POS: the account's own storefront when it is locked
+ * to one, else the one last picked there, else the first active one. Also kept in the shop store so
+ * checkout can send it with the order.
  */
 export const useStorefront = () => {
   const preferredId = useShopStore((state) => state.preferredStorefrontId);
+  const lockedId = useShopStore((state) => state.lockedStorefrontId);
   const setPosStorefront = useShopStore((state) => state.setPosStorefront);
   const [storefronts, setStorefronts] = useState<StorefrontProfile[] | null>(null);
   const [error, setError] = useState<string>();
@@ -49,8 +51,11 @@ export const useStorefront = () => {
     };
   }, []);
 
+  // A locked account never falls back to another storefront
   const storefront = storefronts
-    ? storefronts.find((sf) => sf._id === preferredId) ?? storefronts[0] ?? null
+    ? lockedId
+      ? storefronts.find((sf) => sf._id === lockedId) ?? null
+      : storefronts.find((sf) => sf._id === preferredId) ?? storefronts[0] ?? null
     : null;
 
   useEffect(() => {
@@ -59,7 +64,14 @@ export const useStorefront = () => {
 
   return {
     storefront,
-    error: error ?? (storefronts && !storefront ? 'Storefront မရှိသေးပါ။ Web app မှာ storefront အရင်ထည့်ပါ။' : undefined),
+    isLocked: !!lockedId,
+    error:
+      error ??
+      (storefronts && !storefront
+        ? lockedId
+          ? 'ဒီအကောင့်နဲ့ ချိတ်ထားတဲ့ ဆိုင်ခွဲကို ပိတ်ထားပါတယ်။ Owner ကို ဆက်သွယ်ပါ။'
+          : 'Storefront မရှိသေးပါ။ Web app မှာ storefront အရင်ထည့်ပါ။'
+        : undefined),
   };
 };
 
