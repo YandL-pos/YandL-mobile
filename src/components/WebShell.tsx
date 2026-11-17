@@ -269,6 +269,12 @@ export default function WebShell() {
           break;
         }
 
+        // The web header's bell opens the app's notifications screen
+        case 'OPEN_NOTIFICATIONS': {
+          if (isFocusedRef.current) router.push('/notifications');
+          break;
+        }
+
         case 'GET_PRINTER_STATUS': {
           const state = usePrinterStore.getState();
           webViewRef.current?.postMessage(

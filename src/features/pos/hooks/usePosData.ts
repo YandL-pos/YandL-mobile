@@ -7,9 +7,13 @@ import {
   fetchStorefronts,
 } from '../../../services/pos/posApi';
 import type { CreditPersona, Pagination, PosProduct, StorefrontProfile } from '../../../services/pos/types';
+import { webBridge } from '../../../services/webBridge';
 import { useShopStore } from '../../../store/shopStore';
 
 const PAGE_SIZE = 40;
+
+// The web POS keeps its picked storefront under this localStorage key
+const POS_SELECTED_STOREFRONT_KEY = 'pos_selected_storefront_id';
 
 export const useDebouncedValue = <T>(value: T, delayMs = 300) => {
   const [debounced, setDebounced] = useState(value);
@@ -28,11 +32,12 @@ interface ProductPage {
 }
 
 /**
- * The storefront the POS sells from, like the web POS: the one last picked there, else the first
- * active one. Also kept in the shop store so checkout can send it with the order.
+ * The storefront the POS sells from, like the web POS: the one last picked (here or there), else the
+ * first active one. Also kept in the shop store so checkout can send it with the order.
  */
 export const useStorefront = () => {
   const preferredId = useShopStore((state) => state.preferredStorefrontId);
+  const setPreferredStorefrontId = useShopStore((state) => state.setPreferredStorefrontId);
   const setPosStorefront = useShopStore((state) => state.setPosStorefront);
   const [storefronts, setStorefronts] = useState<StorefrontProfile[] | null>(null);
   const [error, setError] = useState<string>();
@@ -57,8 +62,19 @@ export const useStorefront = () => {
     setPosStorefront(storefront);
   }, [storefront, setPosStorefront]);
 
+  // Same key as the web POS's picker, so the web page and later visits open on this storefront too
+  const selectStorefront = useCallback(
+    (id: string) => {
+      setPreferredStorefrontId(id);
+      webBridge.setLocalStorage(POS_SELECTED_STOREFRONT_KEY, id);
+    },
+    [setPreferredStorefrontId],
+  );
+
   return {
     storefront,
+    storefronts: storefronts ?? [],
+    selectStorefront,
     error: error ?? (storefronts && !storefront ? 'Storefront မရှိသေးပါ။ Web app မှာ storefront အရင်ထည့်ပါ။' : undefined),
   };
 };

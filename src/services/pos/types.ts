@@ -25,6 +25,7 @@ export interface PosProduct {
   SKU?: string;
   category?: string;
   sellingPrice: number;
+  buyingPrice?: number;
   wholesalePrices?: WholesalePrice[];
   availableQuantity?: number;
   quantity?: number;
@@ -39,6 +40,8 @@ export interface FetchProductsParams {
   limit?: number;
   category?: string;
   search?: string;
+  // Only this product's stock in the storefront
+  inventoryId?: string;
 }
 
 // GET /storefront-profile
@@ -59,6 +62,7 @@ export interface StorefrontStockItem {
     SKU?: string;
     category?: string;
     sellingPrice?: number;
+    buyingPrice?: number;
     wholesalePrices?: WholesalePrice[];
   } | null;
   // Stock left to sell; the backend may only send quantity, so read it as availableQuantity ?? quantity

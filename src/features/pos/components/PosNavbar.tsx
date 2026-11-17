@@ -10,6 +10,8 @@ interface Props {
   onBack: () => void;
   onPrinter: () => void;
   printerConnected: boolean;
+  onNotifications: () => void;
+  unreadNotifications: number;
   onHome: () => void;
   onLogout: () => void;
 }
@@ -21,6 +23,8 @@ export default function PosNavbar({
   onBack,
   onPrinter,
   printerConnected,
+  onNotifications,
+  unreadNotifications,
   onHome,
   onLogout,
 }: Props) {
@@ -41,6 +45,14 @@ export default function PosNavbar({
         )}
       </View>
 
+      <TouchableOpacity onPress={onNotifications} style={styles.iconButton} accessibilityLabel="အသိပေးချက်များ (Notifications)">
+        <Ionicons name="notifications-outline" size={18} color={colors.text} />
+        {unreadNotifications > 0 && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{unreadNotifications > 99 ? '99+' : unreadNotifications}</Text>
+          </View>
+        )}
+      </TouchableOpacity>
       <TouchableOpacity onPress={onPrinter} style={styles.iconButton} accessibilityLabel="Bluetooth ပရင်တာ (Printer)">
         <Ionicons name="print-outline" size={18} color={colors.text} />
         {printerConnected && <View style={styles.connectedDot} />}
@@ -106,6 +118,26 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     borderColor: '#fecaca',
+  },
+  // Unread low-stock alerts
+  badge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    backgroundColor: colors.danger,
+    borderWidth: 1.5,
+    borderColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: '800',
   },
   // A printer is connected
   connectedDot: {

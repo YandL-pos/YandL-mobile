@@ -164,21 +164,8 @@ export default function ReceiptPrintTemplate({ receipt, paperWidth, onLogoSettle
 
       <View style={styles.dashedLine} />
 
-      {/* 7. Payment */}
-      <View style={styles.summary}>
-        {!!receipt.paymentType && summaryRow('ငွေပေးချေမှု', receipt.paymentType)}
-        {receipt.paidAmount !== undefined && summaryRow('ပေးငွေ', amount(receipt.paidAmount))}
-        {!!receipt.changeAmount &&
-          receipt.changeAmount > 0 &&
-          summaryRow('ပြန်အမ်းငွေ', amount(receipt.changeAmount))}
-        {!!receipt.dueAmount &&
-          receipt.dueAmount > 0 &&
-          summaryRow('ကျန်ငွေ (အကြွေး)', amount(receipt.dueAmount), true)}
-      </View>
-
-      <View style={styles.dashedLine} />
-
-      {/* 8. Note and receipt details */}
+      {/* 7. Note and receipt details. No payment section (type, paid, change, credit due): the
+          receipt ends at the total. */}
       {!!receipt.note && <T style={[styles.note, size.body]}>မှတ်ချက်: {receipt.note}</T>}
       <View style={styles.spaced}>
         <T style={size.body}>ဘောင်ချာအမှတ်:</T>

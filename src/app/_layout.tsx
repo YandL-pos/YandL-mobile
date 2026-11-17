@@ -8,6 +8,7 @@ import AppDialog from '../components/AppDialog';
 import GlobalReceiptCapturer from '../components/GlobalReceiptCapturer';
 import Toast from '../components/Toast';
 import { APP_FONTS } from '../fonts';
+import { notificationService } from '../services/notificationService';
 import { printerService } from '../services/printerService';
 import { useAuthStore } from '../store/authStore';
 
@@ -24,12 +25,21 @@ export default function RootLayout() {
       .catch(() => {});
   }, []);
 
+  // Low-stock notifications: channels, permission, and opening the notification page on tap
+  useEffect(() => {
+    notificationService.init();
+    const subscription = notificationService.listenForTaps();
+    return () => subscription.remove();
+  }, []);
+
   return (
     <SafeAreaProvider>
       <StatusBar style="dark" />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="printer" />
+        <Stack.Screen name="notifications" />
+        <Stack.Screen name="notification-settings" />
         <Stack.Screen name="pos/index" />
         {/* Popups over the product grid, which stays visible (dimmed) underneath */}
         <Stack.Screen name="pos/checkout" options={{ presentation: 'transparentModal', animation: 'fade' }} />

@@ -1,23 +1,23 @@
 {
   "expo": {
     "name": "YandN",
-    "slug": "commercial-mobile",
+    "slug": "YandL",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/yandn.jpg",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#fff",
+        "foregroundImage": "./assets/yandn.jpg",
+        "backgroundImage": "./assets/yandn.jpg",
+        "monochromeImage": "./assets/yandn.jpg"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.win00.commercialmobile",
+      "package": "com.pos.yandn",
       "permissions": [
         "android.permission.BLUETOOTH_CONNECT",
         "android.permission.BLUETOOTH_SCAN"
@@ -31,15 +31,17 @@
       "expo-router",
       "expo-secure-store",
       "@react-native-community/datetimepicker",
-      "./plugins/withBluetoothPermissions"
+      "./plugins/withBluetoothPermissions",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#1F1FB8",
+          "defaultChannel": "low-stock-alerts"
+        }
+      ]
     ],
-    "extra": {
-      "eas": {
-        "projectId": "336d10d5-397d-49b3-aeb4-2212a45372fb"
-      }
-    },
-    "owner": "aungaungoogame",
-    "scheme": "commercialmobile",
+    "scheme": "yandn",
     "experiments": {
       "typedRoutes": true
     }

@@ -33,6 +33,8 @@ import { useAuthStore } from '../../store/authStore';
 import { useCartStore, useCartTotals } from '../../store/cartStore';
 import { usePrinterStore } from '../../store/printerStore';
 import { useShopStore } from '../../store/shopStore';
+import { useStockAlertStore, useUnreadAlertCount } from '../../store/stockAlertStore';
+import { dialog } from '../../store/dialogStore';
 import { toast } from '../../store/toastStore';
 
 const leavePos = () => {
@@ -116,10 +118,11 @@ function PosCatalog() {
   const openCheckout = useCartStore((state) => state.openCheckout);
   const totals = useCartTotals();
   const connectedPrinter = usePrinterStore((state) => state.connectedPrinter);
+  const unreadNotifications = useUnreadAlertCount();
 
   const debouncedSearch = useDebouncedValue(search.trim());
   const categories = useCategories();
-  const { storefront, error: storefrontError } = useStorefront();
+  const { storefront, storefronts, selectStorefront, error: storefrontError } = useStorefront();
   const { products, totalItems, error, isLoading, isRefreshing, isLoadingMore, loadMore } = useProducts({
     storefrontId: storefront?._id,
     search: debouncedSearch,
@@ -140,6 +143,29 @@ function PosCatalog() {
   const handleWholesalePress = useCallback((product: PosProduct) => setWholesaleProduct(product), []);
   const refresh = () => setRefreshNonce((n) => n + 1);
 
+  // Stock belongs to one storefront, so switching empties the cart, as on the web POS
+  const handleStorefrontChange = (id: string) => {
+    if (id === storefront?._id) return;
+    const switchTo = () => {
+      useCartStore.getState().clearItems();
+      setIsCartOpen(false);
+      selectStorefront(id);
+      // Alerts follow the storefront the POS sells from
+      if (useStockAlertStore.getState().isLoaded) useStockAlertStore.getState().loadAlerts();
+    };
+    if (items.length === 0) {
+      switchTo();
+      return;
+    }
+    dialog.confirm({
+      title: 'Storefront ပြောင်းမလား?',
+      message: 'Storefront ပြောင်းလျှင် ခြင်းထဲမှ ပစ္စည်းများ ရှင်းသွားပါမည်။',
+      confirmText: 'ပြောင်းမယ်',
+      tone: 'danger',
+      onConfirm: switchTo,
+    });
+  };
+
   const handleSelectTier = (product: PosProduct, tierQuantity: number) => {
     showError(applyWholesaleTier(product, tierQuantity));
     setWholesaleProduct(null);
@@ -159,6 +185,9 @@ function PosCatalog() {
         <Text style={styles.pageSubtitle}>Select products and check out voucher for the customer</Text>
       </View>
       <PosFilters
+        storefronts={storefronts}
+        storefrontId={storefront?._id}
+        onStorefrontChange={handleStorefrontChange}
         search={search}
         onSearchChange={setSearch}
         categories={categories}
@@ -184,6 +213,8 @@ function PosCatalog() {
         onBack={leavePos}
         onPrinter={() => router.push('/printer')}
         printerConnected={!!connectedPrinter}
+        onNotifications={() => router.push('/notifications')}
+        unreadNotifications={unreadNotifications}
         onHome={() => showWebPage('/')}
         onLogout={confirmLogout}
       />

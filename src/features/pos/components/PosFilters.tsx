@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
+import type { StorefrontProfile } from '../../../services/pos/types';
 import type { StockFilter } from '../lib';
 import { colors } from '../theme';
 import OptionPickerSheet from './OptionPickerSheet';
@@ -17,6 +18,9 @@ const STOCK_FILTERS: { value: StockFilter; label: string }[] = [
 ];
 
 interface Props {
+  storefronts: StorefrontProfile[];
+  storefrontId: string | undefined;
+  onStorefrontChange: (id: string) => void;
   search: string;
   onSearchChange: (value: string) => void;
   categories: string[];
@@ -28,8 +32,12 @@ interface Props {
   isRefreshing: boolean;
 }
 
-// The web POS's filter grid: search | category, then stock | refresh, two to a row
+// The web POS's filter grid: the storefront picker on its own row, then search | category
+// and stock | refresh, two to a row
 export default function PosFilters({
+  storefronts,
+  storefrontId,
+  onStorefrontChange,
   search,
   onSearchChange,
   categories,
@@ -40,7 +48,13 @@ export default function PosFilters({
   onRefresh,
   isRefreshing,
 }: Props) {
-  const [picker, setPicker] = useState<'category' | 'stock' | null>(null);
+  const [picker, setPicker] = useState<'storefront' | 'category' | 'stock' | null>(null);
+
+  const storefrontOptions = storefronts.map((sf) => ({
+    value: sf._id,
+    label: sf.locationCode ? `${sf.locationName} (${sf.locationCode})` : sf.locationName,
+  }));
+  const storefrontLabel = storefronts.find((sf) => sf._id === storefrontId)?.locationName ?? 'Storefront ရွေးပါ';
 
   const categoryOptions = [
     { value: ALL_CATEGORIES, label: 'ပစ္စည်း အမျိုးအစားများ' },
@@ -51,6 +65,16 @@ export default function PosFilters({
 
   return (
     <View style={styles.grid}>
+      {storefronts.length > 0 && (
+        <View style={styles.fullCell}>
+          <Dropdown
+            icon="storefront-outline"
+            label={storefrontLabel}
+            active
+            onPress={() => setPicker('storefront')}
+          />
+        </View>
+      )}
       <View style={styles.cell}>
         <SearchBar value={search} onChangeText={onSearchChange} />
       </View>
@@ -77,6 +101,14 @@ export default function PosFilters({
       </View>
 
       <OptionPickerSheet
+        visible={picker === 'storefront'}
+        title="Storefront ရွေးချယ်ပါ"
+        options={storefrontOptions}
+        selected={storefrontId ?? ''}
+        onSelect={onStorefrontChange}
+        onClose={() => setPicker(null)}
+      />
+      <OptionPickerSheet
         visible={picker === 'category'}
         title="အမျိုးအစား ရွေးချယ်ပါ"
         options={categoryOptions}
@@ -96,9 +128,20 @@ export default function PosFilters({
   );
 }
 
-function Dropdown({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+function Dropdown({
+  icon,
+  label,
+  active,
+  onPress,
+}: {
+  icon?: React.ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
   return (
     <TouchableOpacity style={[styles.dropdown, active && styles.dropdownActive]} onPress={onPress} activeOpacity={0.8}>
+      {icon && <Ionicons name={icon} size={17} color={active ? colors.primary : colors.textMuted} />}
       <Text style={[styles.dropdownText, active && styles.dropdownTextActive]} numberOfLines={1}>
         {label}
       </Text>
@@ -120,6 +163,9 @@ const styles = StyleSheet.create({
     flexBasis: '48%',
     flexGrow: 1,
     minWidth: 0,
+  },
+  fullCell: {
+    flexBasis: '100%',
   },
   dropdown: {
     height: CELL_HEIGHT,

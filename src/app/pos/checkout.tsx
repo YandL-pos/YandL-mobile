@@ -34,6 +34,7 @@ import {
   validateCheckout,
 } from '../../features/pos/lib';
 import { colors, formatMMK, TABLET_MIN_WIDTH } from '../../features/pos/theme';
+import { checkStockAfterSale } from '../../features/notifications/checkStockAfterSale';
 import { createOrder } from '../../services/pos/posApi';
 import type { CreditPersona } from '../../services/pos/types';
 import { PaymentOption, useCartStore, useCartTotals } from '../../store/cartStore';
@@ -120,8 +121,10 @@ export default function CheckoutScreen() {
       toast.error(res.message || 'ရောင်းချမှု လုပ်ဆောင်ရန် မအောင်မြင်ပါ');
       return;
     }
-    cart.completeSale(res.data, selectedCustomer);
+    const sale = cart.completeSale(res.data, selectedCustomer);
     router.replace('/pos/success');
+    // The sale lowered stock: re-read the sold products and notify if any are low (not awaited)
+    checkStockAfterSale(storefrontId, sale.items);
   };
 
   const handleAddNewCustomer = () => {

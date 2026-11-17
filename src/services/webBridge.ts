@@ -31,6 +31,19 @@ export const webBridge = {
     return true;
   },
 
+  // Write a value the web app keeps in its localStorage (the page's setItem hook syncs it back)
+  setLocalStorage(key: string, value: string): boolean {
+    const webView = getWebView?.();
+    if (!webView) return false;
+    webView.injectJavaScript(`
+      (function() {
+        try { localStorage.setItem(${JSON.stringify(key)}, ${JSON.stringify(value)}); } catch (e) {}
+      })();
+      true;
+    `);
+    return true;
+  },
+
   // Same as the web header's Logout: drop the token and admin, then show the login page.
   // Removing authToken also reaches the app as AUTH_LOGOUT, which clears the native token.
   logout(): boolean {

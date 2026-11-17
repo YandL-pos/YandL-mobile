@@ -13,6 +13,7 @@ export const API_BASE_URL = (
 
 export const API_TIMEOUT_MS = 20000;
 
-// Send the web app's /pos (new sale) to the native POS screen. On for `expo start` (.env.development)
-// and preview builds (eas.json); stays off in production until the native POS is finished.
-export const NATIVE_POS_ENABLED = process.env.EXPO_PUBLIC_NATIVE_POS === '1';
+// Send the web app's /pos (new sale) to the native POS screen, which prints over Bluetooth.
+// On unless EXPO_PUBLIC_NATIVE_POS is "0": `eas update` bundles don't get the build profile's env,
+// so an update published without the variable must not switch the native POS off.
+export const NATIVE_POS_ENABLED = process.env.EXPO_PUBLIC_NATIVE_POS !== '0';

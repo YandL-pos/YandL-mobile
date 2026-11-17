@@ -365,13 +365,8 @@ export const printerService = {
     if (receipt.serviceCharge) await totalRow('Service charge:', amount(receipt.serviceCharge));
     if (receipt.tax) await totalRow('Tax:', amount(receipt.tax));
     await line(separator.trimEnd());
+    // No payment lines (type, paid, change, credit due): the receipt ends at the total
     await totalRow('TOTAL:', amount(receipt.netTotal));
-    await line(separator.trimEnd());
-
-    if (receipt.paymentType) await totalRow('Payment:', receipt.paymentType);
-    if (receipt.paidAmount !== undefined) await totalRow('Paid:', amount(receipt.paidAmount));
-    if (receipt.changeAmount) await totalRow('Change:', amount(receipt.changeAmount));
-    if (receipt.dueAmount) await totalRow('Balance due:', amount(receipt.dueAmount));
     await line(separator.trimEnd());
 
     if (receipt.note) await line(`Note: ${receipt.note}`);

@@ -50,6 +50,7 @@ const toPosProducts = (rows: StorefrontStockItem[]): PosProduct[] => {
       SKU: inv.SKU,
       category: inv.category,
       sellingPrice: inv.sellingPrice ?? 0,
+      buyingPrice: inv.buyingPrice,
       wholesalePrices: inv.wholesalePrices,
       availableQuantity: stock,
     });
@@ -64,6 +65,7 @@ export const fetchProducts = async ({
   limit = 100,
   category,
   search,
+  inventoryId,
 }: FetchProductsParams): Promise<FetchProductsResponse> => {
   try {
     const res = await api.get<ApiResponse<StorefrontStockItem[]> & { pagination?: Pagination }>(
@@ -74,12 +76,33 @@ export const fetchProducts = async ({
         limit,
         category: category && category !== 'All' ? category : undefined,
         search: search?.trim() || undefined,
+        inventoryId,
       },
     );
     return { ...res, data: res.success ? toPosProducts(res.data || []) : [] };
   } catch (error) {
     return failure(error, 'Failed to fetch products', []);
   }
+};
+
+// A few requests at a time, so a big sale doesn't flood the backend
+const FETCH_CONCURRENCY = 4;
+
+// Current stock of some products in one storefront (e.g. the ones just sold), keyed by product id.
+// Products that can't be read are left out.
+export const fetchProductsByIds = async (storefrontId: string, ids: string[]): Promise<Map<string, PosProduct>> => {
+  const products = new Map<string, PosProduct>();
+  for (let i = 0; i < ids.length; i += FETCH_CONCURRENCY) {
+    const batch = ids.slice(i, i + FETCH_CONCURRENCY);
+    const results = await Promise.all(
+      batch.map((inventoryId) => fetchProducts({ storefrontId, inventoryId, page: 1, limit: 10 })),
+    );
+    results.forEach((res, index) => {
+      const product = res.success ? res.data.find((p) => p._id === batch[index]) : undefined;
+      if (product) products.set(batch[index], product);
+    });
+  }
+  return products;
 };
 
 export const fetchCategories = async (): Promise<ApiResponse<string[]>> => {
