@@ -55,14 +55,15 @@ const loadReadIds = async (): Promise<string[]> => {
 // Same rule as the POS screen (useStorefront): the one picked last, else the first active one.
 // The POS screen may not have opened yet (the page can open from a notification or the web header).
 const resolveStorefront = async (): Promise<{ storefront: StorefrontProfile | null } | { error: string }> => {
-  const { posStorefront, preferredStorefrontId } = useShopStore.getState();
-  if (posStorefront && (!preferredStorefrontId || posStorefront._id === preferredStorefrontId)) {
+  const { posStorefront, preferredStorefrontId, lockedStorefrontId } = useShopStore.getState();
+  const targetId = lockedStorefrontId ?? preferredStorefrontId;
+  if (posStorefront && (!targetId || posStorefront._id === targetId)) {
     return { storefront: posStorefront };
   }
   const res = await fetchStorefronts();
   if (!res.success) return { error: res.message };
   const active = res.data.filter((sf) => sf.status === 'active');
-  return { storefront: active.find((sf) => sf._id === preferredStorefrontId) ?? active[0] ?? null };
+  return { storefront: active.find((sf) => sf._id === targetId) ?? (lockedStorefrontId ? null : active[0] ?? null) };
 };
 
 // The backend has no stock filter, so this walks every page of the storefront's (active) products
@@ -115,7 +116,13 @@ export const useStockAlertStore = create<StockAlertState>((set, get) => ({
       return;
     }
 
+    set({ alerts: [], storefront });
     const result = await fetchAllProducts(storefront._id);
+    const lockedId = useShopStore.getState().lockedStorefrontId;
+    if (lockedId && lockedId !== storefront._id) {
+      set({ alerts: [], storefront: null, isLoading: false });
+      return get().loadAlerts();
+    }
     if ('error' in result) {
       set({ isLoading: false, isLoaded: true, error: result.error, readIds: savedReadIds, storefront });
       return;
@@ -131,6 +138,8 @@ export const useStockAlertStore = create<StockAlertState>((set, get) => ({
   applyProducts: (storefrontId, products) => {
     if (!useNotificationSettingsStore.getState().enabled || products.length === 0) return;
     // Before the page has loaded, the list is empty and belongs to no storefront yet
+    const lockedId = useShopStore.getState().lockedStorefrontId;
+    if (lockedId && lockedId !== storefrontId) return;
     const current = get().storefront;
     if (current && current._id !== storefrontId) return;
     set({ alerts: mergeAlerts(get().alerts, products, rules()) });

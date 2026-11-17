@@ -5,7 +5,6 @@ export const WEB_APP_URL = (
 ).replace(/\/+$/, '');
 
 // Override per build with EXPO_PUBLIC_API_BASE_URL (e.g. a local backend while developing).
-// TODO: replace the fallback with the YandL production backend URL.
 export const API_BASE_URL = (
   process.env.EXPO_PUBLIC_API_BASE_URL ||
   'https://yandl-backend-production.up.railway.app/api/v1/'

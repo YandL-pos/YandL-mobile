@@ -46,11 +46,17 @@ const INJECTED_JAVASCRIPT = `
         if (!window.ReactNativeWebView) return;
         var admin = JSON.parse(localStorage.getItem('adminData') || '{}') || {};
         var slot = parseInt(localStorage.getItem('voucherReceiptLogoSlot') || '1', 10);
+        var role = typeof admin.role === 'string' ? admin.role.toLowerCase() : null;
+        var loc = admin.locationId && typeof admin.locationId === 'object' ? admin.locationId : null;
         window.ReactNativeWebView.postMessage(JSON.stringify({
           type: 'WEB_PREFS_SYNC',
           cashierName: admin.name || admin.username || null,
           receiptSlot: isNaN(slot) ? 1 : slot,
-          storefrontId: localStorage.getItem('pos_selected_storefront_id') || null
+          storefrontId: localStorage.getItem('pos_selected_storefront_id') || null,
+          role: role,
+          permissions: Array.isArray(admin.permissions) ? admin.permissions : null,
+          // A non-owner on a storefront location can only sell from that storefront
+          lockedStorefrontId: role !== 'owner' && loc && loc.type === 'storefront' && loc._id ? loc._id : null
         }));
       } catch (e) {}
     }
@@ -230,15 +236,21 @@ export default function WebShell() {
         // Order details' Print button: the web page can't print inside the WebView, so the app prints
         // the voucher on its Bluetooth printer, laid out like a native POS receipt
         case 'PRINT_VOUCHER': {
-          if (!message.voucher || printingVoucherRef.current) break;
+          const voucher = message.voucher || message.data;
+          if (!voucher || printingVoucherRef.current) break;
+          const reportResult = (success: boolean, error?: string) =>
+            webViewRef.current?.postMessage(JSON.stringify({
+              type: 'PRINT_RESULT', success, error, invoiceNo: voucher.invoiceNumber,
+            }));
           printingVoucherRef.current = true;
           toast.info('ဘောင်ချာ ပုံနှိပ်နေပါသည်...');
           try {
-            await printWebVoucher(message.voucher, {
+            await printWebVoucher(voucher, {
               paymentType: message.paymentType,
               paymentMethod: message.paymentMethod,
             });
             toast.success('ပုံနှိပ်ပြီးပါပြီ');
+            reportResult(true);
           } catch (printErr: any) {
             if (!usePrinterStore.getState().connectedPrinter) {
               dialog.confirm({
@@ -250,6 +262,7 @@ export default function WebShell() {
             } else {
               dialog.alert('ပုံနှိပ်၍ မရပါ (Print Error)', printErr?.message || 'ပရင်တာချိတ်ဆက်မှုကို စစ်ဆေးပါ။');
             }
+            reportResult(false, printErr?.message || 'Print failed');
           } finally {
             printingVoucherRef.current = false;
           }
@@ -297,6 +310,8 @@ export default function WebShell() {
 
         case 'AUTH_LOGOUT': {
           useAuthStore.getState().logout();
+          useShopStore.getState().setLockedStorefrontId(null);
+          useShopStore.getState().setPosStorefront(null);
           break;
         }
 
@@ -308,6 +323,15 @@ export default function WebShell() {
           useShopStore
             .getState()
             .setPreferredStorefrontId(typeof message.storefrontId === 'string' ? message.storefrontId : null);
+          useShopStore
+            .getState()
+            .setLockedStorefrontId(typeof message.lockedStorefrontId === 'string' ? message.lockedStorefrontId : null);
+          useAuthStore
+            .getState()
+            .setAccess(
+              typeof message.role === 'string' ? message.role : null,
+              Array.isArray(message.permissions) ? message.permissions : null,
+            );
           break;
         }
 

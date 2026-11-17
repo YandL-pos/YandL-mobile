@@ -37,6 +37,7 @@ import { colors, formatMMK, TABLET_MIN_WIDTH } from '../../features/pos/theme';
 import { checkStockAfterSale } from '../../features/notifications/checkStockAfterSale';
 import { createOrder } from '../../services/pos/posApi';
 import type { CreditPersona } from '../../services/pos/types';
+import { useAuthStore } from '../../store/authStore';
 import { PaymentOption, useCartStore, useCartTotals } from '../../store/cartStore';
 import { useShopStore } from '../../store/shopStore';
 import { toast } from '../../store/toastStore';
@@ -107,6 +108,16 @@ export default function CheckoutScreen() {
 
   const handleSubmit = async () => {
     if (submittingRef.current) return;
+    const { role, permissions } = useAuthStore.getState();
+    if (role && role !== 'owner' && permissions && !permissions.includes('sales')) {
+      toast.error('ဒီအကောင့်မှာ အရောင်းလုပ်ပိုင်ခွင့် မရှိပါ။');
+      return;
+    }
+    const { lockedStorefrontId } = useShopStore.getState();
+    if (lockedStorefrontId && storefrontId !== lockedStorefrontId) {
+      toast.error('အကောင့်နှင့် ချိတ်ထားသော ဆိုင်ခွဲကို ပြန်ဖွင့်ပါ။');
+      return;
+    }
     if (validationError) {
       toast.error(CHECKOUT_ERROR_MESSAGES[validationError]);
       return;

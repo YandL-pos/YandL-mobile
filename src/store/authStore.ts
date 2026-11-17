@@ -9,9 +9,13 @@ interface AuthState {
   isHydrated: boolean;
   // Signed-in admin's name from the web app, printed as the cashier
   userName: string | null;
+  // Role and module permissions from the web app's adminData; null until the WebView has synced them
+  role: string | null;
+  permissions: string[] | null;
   hydrate: () => Promise<void>;
   setToken: (token: string | null) => void;
   setUserName: (name: string | null) => void;
+  setAccess: (role: string | null, permissions: string[] | null) => void;
   logout: () => void;
 }
 
@@ -20,6 +24,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   isHydrated: false,
   userName: null,
+  role: null,
+  permissions: null,
 
   // Restore the token saved from the last session so native screens work before the WebView syncs
   hydrate: async () => {
@@ -49,9 +55,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   setUserName: (userName) => set({ userName }),
+  setAccess: (role, permissions) => set({ role, permissions }),
 
   logout: () => {
-    set({ userName: null });
+    set({ userName: null, role: null, permissions: null });
     get().setToken(null);
   },
 }));
