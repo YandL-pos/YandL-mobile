@@ -4,13 +4,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
+import { colors } from '../features/pos/theme';
 import { notificationService } from '../services/notificationService';
 import { NotificationSettings, useNotificationSettingsStore } from '../store/notificationSettingsStore';
 import { useStockAlertStore } from '../store/stockAlertStore';
 import { toast } from '../store/toastStore';
 
 // Layout and wording follow offline-pos's Settings › "စတော့ သတိပေးချက်များ" section
-const PRIMARY = '#1b129c';
+const PRIMARY = colors.primary;
 const THRESHOLD_PRESETS = [3, 5, 10, 15, 20];
 
 const leave = () => {

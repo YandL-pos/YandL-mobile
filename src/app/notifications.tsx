@@ -18,14 +18,14 @@ import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { countAlerts, StockAlertItem } from '../features/notifications/lib/stockAlerts';
-import { TABLET_MIN_WIDTH } from '../features/pos/theme';
+import { colors, TABLET_MIN_WIDTH } from '../features/pos/theme';
 import { webBridge } from '../services/webBridge';
 import { useNotificationSettingsStore } from '../store/notificationSettingsStore';
 import { useStockAlertStore, useUnreadAlertCount } from '../store/stockAlertStore';
 import { toast } from '../store/toastStore';
 
 // Layout, wording and colours follow offline-pos's NotificationScreen
-const PRIMARY = '#1b129c';
+const PRIMARY = colors.primary;
 const ITEMS_PER_PAGE = 50;
 
 type FilterType = 'all' | 'unread' | 'out_of_stock' | 'low_stock';
@@ -457,7 +457,7 @@ export default function NotificationScreen() {
             <View style={styles.filterHeaderRow}>
               <Text style={styles.filterSectionTitle}>Filters များ:</Text>
               <TouchableOpacity style={styles.settingsShortcutBtn} activeOpacity={0.75} onPress={openSettings}>
-                <Ionicons name="settings-outline" size={16} color="#4338ca" />
+                <Ionicons name="settings-outline" size={16} color={colors.primaryDark} />
                 <Text style={styles.settingsShortcutText}>လက်ကျန်နည်း သတ်မှတ်ချက်: ≤ {lowStockThreshold} ခု (ပြင်ရန်)</Text>
               </TouchableOpacity>
             </View>
@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
     height: 44,
     paddingHorizontal: 18,
     borderRadius: 24,
-    backgroundColor: '#eef2ff',
+    backgroundColor: colors.primarySoft,
     borderWidth: 1.5,
     borderColor: PRIMARY,
   },
@@ -585,17 +585,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#eef2ff',
+    backgroundColor: colors.primarySoft,
     borderWidth: 1,
-    borderColor: '#c7d2fe',
+    borderColor: colors.primaryBorder,
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 16,
   },
-  settingsShortcutText: { fontSize: 12, fontWeight: '700', color: '#4338ca' },
+  settingsShortcutText: { fontSize: 12, fontWeight: '700', color: colors.primaryDark },
   filterScrollContent: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 2 },
   filterPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20 },
-  filterPillActive: { backgroundColor: '#eef2ff', borderWidth: 1.5, borderColor: PRIMARY },
+  filterPillActive: { backgroundColor: colors.primarySoft, borderWidth: 1.5, borderColor: PRIMARY },
   filterPillInactive: { backgroundColor: '#f8fafc', borderWidth: 1.2, borderColor: '#e2e8f0' },
   filterPillText: { fontSize: 13 },
   filterPillTextActive: { color: PRIMARY, fontWeight: '800' },
@@ -605,7 +605,7 @@ const styles = StyleSheet.create({
   loadingContainer: { paddingVertical: 60, alignItems: 'center', justifyContent: 'center', gap: 12 },
   loadingText: { fontSize: 13.5, color: '#64748b', fontWeight: '600' },
   emptyStateCard: {
-    backgroundColor: '#eef2ff',
+    backgroundColor: colors.primarySoft,
     borderRadius: 20,
     paddingVertical: 36,
     paddingHorizontal: 28,
@@ -616,7 +616,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: 30,
     borderWidth: 1,
-    borderColor: '#e0e7ff',
+    borderColor: colors.primaryBorder,
   },
   emptyStateTitle: { fontSize: 18, fontWeight: '800', color: PRIMARY, textAlign: 'center', marginTop: 14, lineHeight: 28 },
   errorText: { fontSize: 13, color: '#64748b', textAlign: 'center', marginTop: 8 },

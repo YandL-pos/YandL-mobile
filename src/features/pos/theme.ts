@@ -1,8 +1,9 @@
 // Colours from the web POS, so both look like one product
 export const colors = {
-  primary: '#2216a8',
-  primaryDark: '#1e1b4b',
-  primarySoft: '#EEF2FF',
+  primary: '#AF9151',
+  primaryDark: '#694F24',
+  primarySoft: '#F8F4EA',
+  primaryBorder: '#E7D8B4',
   background: '#F5F4EF',
   surface: '#ffffff',
   text: '#1f2937',
